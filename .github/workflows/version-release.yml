@@ -88,6 +88,7 @@ jobs:
           run: |
                 pip install pipenv
                 CC=gcc-${{ env.GCC_MAJOR_VERSION }} CXX=g++-${{ env.GCC_MAJOR_VERSION }} pipenv install --python $(which python) --dev --verbose
+                sudo apt-get update
                 sudo apt install texlive-latex-extra dvipng
           working-directory: ./discopygal
 
