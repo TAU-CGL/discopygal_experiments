@@ -14,7 +14,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [macos-latest, macos-14, macos-13, macOS-15, windows-latest]
+                os: [macos-latest, macos-14, macos-13, macOS-15]
                 python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
         steps:
@@ -25,12 +25,6 @@ jobs:
             uses: actions/setup-python@v5
             with:
               python-version: ${{ matrix.python-version }}
-
-          - name: Cache Python packages
-            uses: actions/cache@v4
-            with:
-                path: ~/.cache/pip
-                key: ${{ runner.os }}-pip-${{ hashFiles('**/discopygal*.whl') }}
 
           - name: Setup for macOS
             if: runner.os == 'macOS'
