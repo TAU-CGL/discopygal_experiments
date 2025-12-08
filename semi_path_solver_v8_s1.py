@@ -78,7 +78,6 @@ class SemiPathSolver(Solver):
         self.collision_detection = None
 
     def load_scene(self, scene):
-        import gc; gc.disable()
         super().load_scene(scene)
 
         if len(self.scene.robots) != 1:
@@ -269,6 +268,7 @@ class SemiPathSolver(Solver):
         # map face id to vertexes in it
         face_dict = {}
 
+        assert arr.is_valid()
         idx = 1
         for vertex in arr.vertices():
             vertex.set_data(idx)
