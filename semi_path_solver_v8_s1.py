@@ -9,8 +9,6 @@ from discopygal.geometry_utils import bounding_boxes, collision_detection, conve
 from discopygal.bindings import FT, Point_2, Ker, Arr_trapezoid_ric_point_location, Arr_overlay_function_traits, \
     Arrangement_2, Polygon_2, Aos2, Curve_2, Ms2, Vertex, Segment_2, Halfedge, Face, TPoint
 
-import gc; gc.disable()
-
 
 class FaceData:
     FREE = 0
@@ -101,6 +99,7 @@ class SemiPathSolver(Solver):
         return self.arr
 
     def _solve(self):
+        import gc; gc.disable()
         source_idx = self.find_face_index(self.robot.start, self.pl)
         target_idx = self.find_face_index(self.robot.end, self.pl)
 
