@@ -274,7 +274,7 @@ class SemiPathSolver(Solver):
         assert arr.is_valid()
         idx = 1
         for vertex in arr.vertices():
-            vertex.set_data(int_list[idx])
+            vertex.set_data(idx)
             conn_graph.add_node(idx)
             vertex_dict[idx] = vertex
             idx += 1
