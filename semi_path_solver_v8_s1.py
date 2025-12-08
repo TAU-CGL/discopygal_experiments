@@ -78,6 +78,7 @@ class SemiPathSolver(Solver):
         self.collision_detection = None
 
     def load_scene(self, scene):
+        import gc; gc.disable()
         super().load_scene(scene)
 
         if len(self.scene.robots) != 1:
@@ -99,7 +100,6 @@ class SemiPathSolver(Solver):
         return self.arr
 
     def _solve(self):
-        import gc; gc.disable()
         source_idx = self.find_face_index(self.robot.start, self.pl)
         target_idx = self.find_face_index(self.robot.end, self.pl)
 
