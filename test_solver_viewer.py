@@ -92,7 +92,7 @@ def test_sanity():
     assert solver.solve(Scene.from_file("scenes/legacy/1_monster_square_tight.json")) is not None
 
 
-def test_semi_exact_solver():
+def test_semi_free_solver():
     from semi_path_solver_v8_s1 import SemiPathSolver
     solver = SemiPathSolver.init_default_solver()
     assert solver.solve(Scene.from_file("scenes/legacy/1_monster_square_tight.json")) is not None
@@ -126,7 +126,7 @@ class TestsGUI:
     def test_solver_viewer_sanity(self):
         self.solver_viewer_basic_test(scene="scenes/legacy/1_monster_square_tight.json", solver="PRM")
 
-    def test_solver_viewer_with_semi_exact(self):
+    def test_solver_viewer_with_semi_free(self):
         def show_arrangement_gui(gui_tester: GUITester):
             gui_tester.trigger_action("Solve", 2)
             if gui_tester.solve_success_string:
