@@ -1,0 +1,46 @@
+name: Run Discopygal Tests
+
+env:
+  MAX_JOBS: 256 # Max amount of jobs is 256
+  QT_QPA_PLATFORM: offscreen
+  CI: 1
+
+on:
+    workflow_dispatch:
+
+jobs:
+    run-tests:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [macos-latest, macos-14, macos-13, macOS-15]
+                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Set up Python
+            uses: actions/setup-python@v5
+            with:
+              python-version: ${{ matrix.python-version }}
+
+          - name: Cache Python packages
+            uses: actions/cache@v4
+            with:
+                path: ~/.cache/pip
+                key: ${{ runner.os }}-pip-${{ hashFiles('**/discopygal*.whl') }}
+
+          - name: Setup for macOS
+            if: runner.os == 'macOS'
+            run: pip install pyqt5
+
+          - name: Install test dependencies
+            run: pip install pytest
+
+          - name: Install Discopygal
+            run: pip install -v discopygal*.whl
+
+          - name: Run Tests
+            run: pytest -v test_solver_viewer.py
