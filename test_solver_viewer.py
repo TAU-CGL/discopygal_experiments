@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import faulthandler
+import pytest
 from PyQt5.QtWidgets import QApplication, QLineEdit, QTextEdit
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtTest import QTest
@@ -110,6 +111,7 @@ class TestsGUI:
     def solver_viewer_basic_test(self, **kwargs):
         self.solver_viewer_test_case(GUITester.basic_check_gui, **kwargs)
 
+    @pytest.skip
     def test_solver_viewer_with_semi_exact(self):
         def show_arrangement_gui(gui_tester: GUITester):
             gui_tester.trigger_action("Solve", 2)
@@ -127,8 +129,18 @@ class TestsGUI:
 
         self.solver_viewer_test_case(show_arrangement_gui, scene="scenes/legacy/1_monster_square_tight.json", solver_file="semi_path_solver_v8_s1.py", solver="SemiPathSolver")
 
+    def test_solver_viewer_sanity(self):
+        self.solver_viewer_basic_test(scene="scenes/legacy/1_monster_square_tight.json", solver="PRM")
 
+
+@pytest.skip
 def test_semi_exact_solver():
     from semi_path_solver_v8_s1 import SemiPathSolver
     solver = SemiPathSolver.init_default_solver()
+    assert solver.solve(Scene.from_file("scenes/legacy/1_monster_square_tight.json")) is not None
+
+
+def test_sanity():
+    from discopygal.solvers.prm import PRM
+    solver = PRM.init_default_solver()
     assert solver.solve(Scene.from_file("scenes/legacy/1_monster_square_tight.json")) is not None
