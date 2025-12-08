@@ -10,6 +10,9 @@ from discopygal.bindings import FT, Point_2, Ker, Arr_trapezoid_ric_point_locati
     Arrangement_2, Polygon_2, Aos2, Curve_2, Ms2, Vertex, Segment_2, Halfedge, Face, TPoint
 
 
+int_list = list(range(1000))
+
+
 class FaceData:
     FREE = 0
     INVALID = 1
@@ -271,7 +274,7 @@ class SemiPathSolver(Solver):
         assert arr.is_valid()
         idx = 1
         for vertex in arr.vertices():
-            vertex.set_data(idx)
+            vertex.set_data(int_list[idx])
             conn_graph.add_node(idx)
             vertex_dict[idx] = vertex
             idx += 1
