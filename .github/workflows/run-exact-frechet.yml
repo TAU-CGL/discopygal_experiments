@@ -46,7 +46,7 @@ jobs:
             run: pip install pytest pytest-split
 
           - name: Clone discopygal
-            run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git/three_curve_frechet
+            run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git@three_curve_frechet
 
           - name: Install Discopygal
             run: pip install -v .
