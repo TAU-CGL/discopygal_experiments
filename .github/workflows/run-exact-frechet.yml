@@ -64,7 +64,7 @@ jobs:
             run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git -b three_curve_frechet
 
           - name: Install Discopygal
-            run: pip install -v discopygal
+            run: pip install -v ./discopygal
 
           # - name: Install CGALPY with conics
           #   run: |
