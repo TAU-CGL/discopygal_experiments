@@ -62,7 +62,7 @@ jobs:
             working-directory: ./discopygal
 
           - run: |
-                  pytest -vs --splits ${{ env.MAX_JOBS }} --group ${{ matrix.shard }} examples\frechet_matching\exact_three_curve_frechet_example.py || exit_code=$?
+                  pytest -vs --splits ${{ env.MAX_JOBS }} --group ${{ matrix.shard }} examples/frechet_matching/exact_three_curve_frechet_example.py || exit_code=$?
                   if [ "$exit_code" = "5" ]; then
                     echo "No tests in shard"
                     exit 0
