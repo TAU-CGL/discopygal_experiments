@@ -44,6 +44,12 @@ jobs:
             with:
               python-version: ${{ env.PYTHON_VERSION }}
 
+          - name: Cache Python packages
+            uses: actions/cache@v4
+            with:
+                path: ~/.cache/pip
+                key: exact-frechet-pip
+
           - name: Install GCC
             if: runner.os == 'Linux'
             run: |
@@ -58,14 +64,17 @@ jobs:
             run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git -b three_curve_frechet
 
           - name: Install Discopygal
-            run: pip install -v .
-            working-directory: ./discopygal
+            run: pip install -v discopygal
+
+          # - name: Install CGALPY with conics
+          #   run: |
+          #         pip uninstall cgalpy
+          #         pip -v install git+https://bitbucket.org/taucgl/cgal-python-bindings@2104c9d000e1f317c53f82b9162c0a45c9baeccc  --config-settings=cmake.define.CGALPY_AOS2_GEOMETRY_TRAITS_NAME=conic
 
           - run: |
-                  pytest -vs --splits ${{ env.MAX_JOBS }} --group ${{ matrix.shard }} examples/frechet_matching/exact_three_curve_frechet_example.py || exit_code=$?
+                  pytest -vs --splits ${{ env.MAX_JOBS }} --group ${{ matrix.shard }} discopygal/examples/frechet_matching/exact_three_curve_frechet_example.py || exit_code=$?
                   if [ "$exit_code" = "5" ]; then
                     echo "No tests in shard"
                     exit 0
                   fi
                   exit $exit_code
-            working-directory: ./discopygal
