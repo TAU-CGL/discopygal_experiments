@@ -67,7 +67,7 @@ jobs:
 
           - name: Install CGALPY with conics
             run: |
-                  pip uninstall cgalpy
+                  pip uninstall -y cgalpy
                   pip -v install git+https://bitbucket.org/taucgl/cgal-python-bindings@2104c9d000e1f317c53f82b9162c0a45c9baeccc  --config-settings=cmake.define.CGALPY_AOS2_GEOMETRY_TRAITS_NAME=conic
 
           - run: |
