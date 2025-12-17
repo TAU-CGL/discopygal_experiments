@@ -44,6 +44,7 @@ jobs:
               python-version: ${{ env.PYTHON_VERSION }}
 
           - name: Cache Python packages
+            id: pip-cache
             uses: actions/cache@v4
             with:
                 path: ~/.cache/pip
@@ -67,7 +68,9 @@ jobs:
 
           - name: Install CGALPY with conics
             run: |
-                  pip uninstall -y cgalpy
+                  if [ "${{ steps.pip-cache.outputs.cache-hit }}" != "true" ]; then
+                    pip uninstall -y cgalpy
+                  fi
                   pip -v install git+https://bitbucket.org/taucgl/cgal-python-bindings@2104c9d000e1f317c53f82b9162c0a45c9baeccc  --config-settings=cmake.define.CGALPY_AOS2_GEOMETRY_TRAITS_NAME=conic
 
           - run: |
