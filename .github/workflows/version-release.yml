@@ -112,7 +112,7 @@ jobs:
             matrix:
                 os: [ubuntu-24.04, ubuntu-22.04, ubuntu-slim, ubuntu-24.04-arm, ubuntu-22.04-arm,
                      windows-2025, windows-2022, windows-2019, windows-11-arm,
-                     macos-15, macos-14, macos-15-large, macos-14-large]
+                     macos-15, macos-14]
                 python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
         steps:
@@ -177,7 +177,9 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-22.04, macos-14, windows-2025, macOS-15]
+                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-slim, ubuntu-24.04-arm, ubuntu-22.04-arm,
+                     windows-2025, windows-2022, windows-2019, windows-11-arm,
+                     macos-15, macos-14]
                 python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
         steps:
