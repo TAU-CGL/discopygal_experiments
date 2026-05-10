@@ -31,6 +31,12 @@ jobs:
         - name: Clone discopygal
           run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
 
+        - name: Install Qt dependencies for ARM64
+          if: runner.arch == 'ARM64'
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y qt5-qmake qtbase5-dev libqt5core5a libqt5gui5 build-essential
+
         - name: Preparing requirements
           run: pip install build findpydeps
 
@@ -79,6 +85,12 @@ jobs:
         - name: Clone discopygal
           run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
 
+        - name: Install Qt dependencies for ARM64
+          if: runner.arch == 'ARM64'
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y qt5-qmake qtbase5-dev libqt5core5a libqt5gui5 build-essential
+
         - name: Increase conan timeout
           run: |
                 mkdir -p ~/.conan2
@@ -110,10 +122,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-slim, ubuntu-24.04-arm, ubuntu-22.04-arm,
+                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm,
                      windows-2025, windows-2022, windows-2019, windows-11-arm,
                      macos-15, macos-14]
-                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+                python-version: ["3.10.x", "3.11", "3.12", "3.13"]
 
         steps:
         - name: Checkout code
@@ -180,7 +192,7 @@ jobs:
                 os: [ubuntu-24.04, ubuntu-22.04, ubuntu-slim, ubuntu-24.04-arm, ubuntu-22.04-arm,
                      windows-2025, windows-2022, windows-2019, windows-11-arm,
                      macos-15, macos-14]
-                python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+                python-version: ["3.10.x", "3.11", "3.12", "3.13"]
 
         steps:
         - name: Checkout code
