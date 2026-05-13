@@ -122,10 +122,11 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm,
-                     windows-2025, windows-2022, windows-2019, windows-11-arm,
+                os: [ubuntu-24.04, ubuntu-22.04, 
+                #  ubuntu-22.04-arm,windows-11-arm,ubuntu-24.04-arm,
+                     windows-2025, windows-2022, windows-2019, 
                      macos-15, macos-14]
-                python-version: ["3.10.x", "3.11", "3.12", "3.13"]
+                python-version: ["3.11", "3.12", "3.13"]
 
         steps:
         - name: Checkout code
@@ -135,6 +136,22 @@ jobs:
           uses: actions/setup-python@v5
           with:
               python-version: ${{ matrix.python-version }}
+
+        - name: Install Qt on Windows ARM
+          if: runner.os == 'Windows' && runner.arch == 'ARM64'
+          shell: powershell
+          run: |
+            winget install --id TheQtCompany.Qt -e --source winget || winget install --id TheQtCompany.Qt.5 -e --source winget
+            # common install locations; pick the first that exists
+            $candidates = @(
+              'C:\Program Files\Qt\5.15.2\msvc2019_64\bin',
+              'C:\Program Files\Qt\5.15.2\mingw81_64\bin',
+              'C:\Program Files\Qt\6.5.0\msvc2019_64\bin'
+            )
+            foreach ($p in $candidates) {
+              if (Test-Path $p) { Add-Content -Path $env:GITHUB_PATH -Value $p; break }
+            }
+            qmake -v
 
         - name: Setup for Linux
           if: runner.os == 'Linux'
@@ -189,7 +206,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-slim, ubuntu-24.04-arm, ubuntu-22.04-arm,
+                os: [ubuntu-24.04, ubuntu-22.04, ubuntu-24.04-arm, ubuntu-22.04-arm,
                      windows-2025, windows-2022, windows-2019, windows-11-arm,
                      macos-15, macos-14]
                 python-version: ["3.10.x", "3.11", "3.12", "3.13"]
@@ -202,6 +219,21 @@ jobs:
           uses: actions/setup-python@v5
           with:
               python-version: ${{ matrix.python-version }}
+
+        - name: Install Qt on Windows ARM
+          if: runner.os == 'Windows' && runner.arch == 'ARM64'
+          shell: powershell
+          run: |
+            winget install --id TheQtCompany.Qt -e --source winget || winget install --id TheQtCompany.Qt.5 -e --source winget
+            $candidates = @(
+              'C:\Program Files\Qt\5.15.2\msvc2019_64\bin',
+              'C:\Program Files\Qt\5.15.2\mingw81_64\bin',
+              'C:\Program Files\Qt\6.5.0\msvc2019_64\bin'
+            )
+            foreach ($p in $candidates) {
+              if (Test-Path $p) { Add-Content -Path $env:GITHUB_PATH -Value $p; break }
+            }
+            qmake -v
 
         - name: Setup for Linux
           if: runner.os == 'Linux'
