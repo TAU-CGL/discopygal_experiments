@@ -6,280 +6,525 @@ env:
   QT_QPA_PLATFORM: offscreen
   CI: 1
 
-
 on:
   workflow_dispatch:
 
-
 jobs:
-    build_package:
-        runs-on: ubuntu-latest
 
-        outputs:
-            package_whl_file: ${{ steps.build_package.outputs.package_whl_file }}
-            starter_package_whl_file: ${{ steps.build_starter_package.outputs.starter_package_whl_file }}
+  # ============================================================
+  # BUILD PACKAGE
+  # ============================================================
 
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+  build_package:
+    runs-on: ubuntu-latest
 
-        - name: Set up Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: ${{ env.PYTHON_VERSION }}
+    outputs:
+      package_zip_file: ${{ steps.build_package.outputs.package_zip_file }}
+      package_whl_file: ${{ steps.build_package.outputs.package_whl_file }}
+      starter_package_whl_file: ${{ steps.build_starter_package.outputs.starter_package_whl_file }}
 
-        - name: Clone discopygal
-          run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+    steps:
 
-        - name: Install Qt dependencies for ARM64
-          if: runner.arch == 'ARM64'
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y qt5-qmake qtbase5-dev libqt5core5a libqt5gui5 build-essential
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Preparing requirements
-          run: pip install build findpydeps
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-        - name: Build package
-          id: build_package
-          run: |
-                python scripts/build_package.py
-                echo "package_whl_file=$(basename `ls dist/*.whl`)" >> $GITHUB_OUTPUT
-          working-directory: ./discopygal
+      - name: Clone discopygal
+        run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
 
-        - name: Upload Discopygal package
-          uses: actions/upload-artifact@v4
-          with:
-            name: package
-            path: discopygal/dist/
+      - name: Install Qt6 dependencies for ARM64
+        if: runner.arch == 'ARM64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev \
+            build-essential
 
-        - name: Build starter package
-          id: build_starter_package
-          run: |
-                rm -rf dist
-                python scripts/build_starter_package.py
-                echo "starter_package_whl_file=$(basename `ls dist/*.whl`)" >> $GITHUB_OUTPUT
-          working-directory: ./discopygal
+      - name: Preparing requirements
+        run: |
+          pip install build findpydeps
 
-        - name: Upload Discopygal-Starter package
-          uses: actions/upload-artifact@v4
-          with:
-            name: starter_package
-            path: discopygal/dist/
+      # ----------------------------------------------------------
+      # Build main package
+      # ----------------------------------------------------------
 
-    build_docs:
-        runs-on: ubuntu-latest
+      - name: Build package
+        id: build_package
+        run: |
+          python scripts/build_package.py
 
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+          WHL=$(basename "$(ls dist/*.whl)")
 
-        - name: Set up Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: ${{ env.PYTHON_VERSION }}
+          echo "Built wheel: $WHL"
 
-        - name: Install GCC ${{ env.GCC_MAJOR_VERSION }}
-          run: sudo apt install gcc-${{ env.GCC_MAJOR_VERSION }} g++-${{ env.GCC_MAJOR_VERSION }}
+          mkdir -p release
 
-        - name: Clone discopygal
-          run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+          cp "dist/$WHL" release/
+          cp install.py release/
+          cp scripts/install_cgal.py release/
 
-        - name: Install Qt dependencies for ARM64
-          if: runner.arch == 'ARM64'
-          run: |
-            sudo apt-get update
-            sudo apt-get install -y qt5-qmake qtbase5-dev libqt5core5a libqt5gui5 build-essential
+          cd release
 
-        - name: Increase conan timeout
-          run: |
-                mkdir -p ~/.conan2
-                echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
+          zip "../discopygal-release.zip" *
 
-        - name: Preparing requirements
-          run: |
-                pip install pipenv
-                CC=gcc-${{ env.GCC_MAJOR_VERSION }} CXX=g++-${{ env.GCC_MAJOR_VERSION }} pipenv install --python $(which python) --dev --verbose
-                sudo apt-get update
-                sudo apt install texlive-latex-extra dvipng
-          working-directory: ./discopygal
+          echo "package_whl_file=$WHL" >> "$GITHUB_OUTPUT"
+          echo "package_zip_file=discopygal-release.zip" >> "$GITHUB_OUTPUT"
 
-        - name: Build docs
-          run: |
-                pipenv run make clean
-                pipenv run make html
-          working-directory: ./discopygal/docs
+          echo ""
+          echo "Release contents:"
+          unzip -l ../discopygal-release.zip
+        working-directory: ./discopygal
 
-        - name: Upload docs
-          uses: actions/upload-artifact@v4
-          with:
-            path: discopygal/docs/_build/html
-            name: html_docs
+      # ----------------------------------------------------------
+      # Upload release ZIP
+      # ----------------------------------------------------------
 
-    check_package:
-        runs-on: ${{ matrix.os }}
-        needs: build_package
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-24.04, ubuntu-22.04, 
-                #  ubuntu-22.04-arm,windows-11-arm,ubuntu-24.04-arm,
-                # windows-2019, 
-                     windows-2025, windows-2022, 
-                     macos-15, macos-14]
-                python-version: ["3.11", "3.12", "3.13"]
+      - name: Upload Discopygal release
+        uses: actions/upload-artifact@v4
+        with:
+          name: discopygal-release
+          path: discopygal/discopygal-release.zip
 
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+      # ----------------------------------------------------------
+      # Build starter package
+      # ----------------------------------------------------------
 
-        - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v5
-          with:
-              python-version: ${{ matrix.python-version }}
+      - name: Build starter package
+        id: build_starter_package
+        run: |
+          rm -rf dist
 
-        - name: Install Qt on Windows ARM
-          if: runner.os == 'Windows' && runner.arch == 'ARM64'
-          shell: powershell
-          run: |
-            winget install --id TheQtCompany.Qt -e --source winget || winget install --id TheQtCompany.Qt.5 -e --source winget
-            # common install locations; pick the first that exists
-            $candidates = @(
-              'C:\Program Files\Qt\5.15.2\msvc2019_64\bin',
-              'C:\Program Files\Qt\5.15.2\mingw81_64\bin',
-              'C:\Program Files\Qt\6.5.0\msvc2019_64\bin'
-            )
-            foreach ($p in $candidates) {
-              if (Test-Path $p) { Add-Content -Path $env:GITHUB_PATH -Value $p; break }
-            }
-            qmake -v
+          python scripts/build_starter_package.py
 
-        - name: Setup for Linux
-          if: runner.os == 'Linux'
-          run:  |
-                 sudo apt install gcc-${{ env.GCC_MAJOR_VERSION }} g++-${{ env.GCC_MAJOR_VERSION }}
-                 echo "CC=gcc-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
-                 echo "CXX=g++-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+          WHL=$(basename "$(ls dist/*.whl)")
 
-        - name: Setup for macOS
-          if: runner.os == 'macOS'
-          run: pip install pyqt5
+          echo "starter_package_whl_file=$WHL" >> "$GITHUB_OUTPUT"
+        working-directory: ./discopygal
 
-        - name: Download discopygal whl
-          uses: actions/download-artifact@v4
-          with:
-            name: package
+      - name: Upload Discopygal-Starter package
+        uses: actions/upload-artifact@v4
+        with:
+          name: starter_package
+          path: discopygal/dist/
 
-        - name: Increase conan timeout
-          run: |
-                mkdir -p ~/.conan2
-                echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
 
-        - name: Install Discopygal
-          run: pip install -v ${{ needs.build_package.outputs.package_whl_file }}
+  # ============================================================
+  # BUILD DOCUMENTATION
+  # ============================================================
 
-        - name: Clone discopygal
-          run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+  build_docs:
+    runs-on: ubuntu-latest
 
-        - name: Install test dependencies
-          run: pip install pytest
+    steps:
 
-        - name: Run tests
-          run: pytest -v ./tests -m sanity
-          working-directory: ./discopygal
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Run GUI tests (Linux)
-          if: runner.os == 'Linux'
-          run: |
-                sudo apt-get install -y xvfb
-                export DISPLAY=:99
-                xvfb-run -a pytest -vs ./tests -m gui
-          working-directory: ./discopygal
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-        - name: Run GUI tests
-          if: runner.os != 'Linux'
-          run: pytest -vs ./tests -m gui
-          working-directory: ./discopygal
+      - name: Install GCC ${{ env.GCC_MAJOR_VERSION }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-${{ env.GCC_MAJOR_VERSION }} \
+            g++-${{ env.GCC_MAJOR_VERSION }}
 
-    check_starter_package:
-        runs-on: ${{ matrix.os }}
-        needs: build_package
-        strategy:
-            fail-fast: false
-            matrix:
-                os: [ubuntu-24.04, ubuntu-22.04,
-                #  ubuntu-24.04-arm, ubuntu-22.04-arm,windows-2019, windows-11-arm,
-                     windows-2025, windows-2022, 
-                     macos-15, macos-14]
-                python-version: ["3.11", "3.12", "3.13"]
+      - name: Install Qt6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev \
+            build-essential
 
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+      - name: Clone discopygal
+        run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
 
-        - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v5
-          with:
-              python-version: ${{ matrix.python-version }}
+      - name: Increase conan timeout
+        run: |
+          mkdir -p ~/.conan2
+          echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
 
-        - name: Install Qt on Windows ARM
-          if: runner.os == 'Windows' && runner.arch == 'ARM64'
-          shell: powershell
-          run: |
-            winget install --id TheQtCompany.Qt -e --source winget || winget install --id TheQtCompany.Qt.5 -e --source winget
-            $candidates = @(
-              'C:\Program Files\Qt\5.15.2\msvc2019_64\bin',
-              'C:\Program Files\Qt\5.15.2\mingw81_64\bin',
-              'C:\Program Files\Qt\6.5.0\msvc2019_64\bin'
-            )
-            foreach ($p in $candidates) {
-              if (Test-Path $p) { Add-Content -Path $env:GITHUB_PATH -Value $p; break }
-            }
-            qmake -v
+      - name: Preparing requirements
+        run: |
+          pip install pipenv
 
-        - name: Setup for Linux
-          if: runner.os == 'Linux'
-          run:  |
-                 sudo apt install gcc-${{ env.GCC_MAJOR_VERSION }} g++-${{ env.GCC_MAJOR_VERSION }}
-                 echo "CC=gcc-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
-                 echo "CXX=g++-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+          CC=gcc-${{ env.GCC_MAJOR_VERSION }} \
+          CXX=g++-${{ env.GCC_MAJOR_VERSION }} \
+          pipenv install \
+            --python $(which python) \
+            --dev \
+            --verbose
 
-        - name: Setup for macOS
-          if: runner.os == 'macOS'
-          run: pip install pyqt5
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-extra \
+            dvipng
+        working-directory: ./discopygal
 
-        - name: Download discopygal whl
-          uses: actions/download-artifact@v4
-          with:
-            name: starter_package
+      - name: Build docs
+        run: |
+          pipenv run make clean
+          pipenv run make html
+        working-directory: ./discopygal/docs
 
-        - name: Increase conan timeout
-          run: |
-                mkdir -p ~/.conan2
-                echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          path: discopygal/docs/_build/html
+          name: html_docs
 
-        - name: Install Discopygal
-          run: pip install -v ${{ needs.build_package.outputs.starter_package_whl_file }}
 
-        - name: Clone discopygal
-          run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+  # ============================================================
+  # CHECK MAIN PACKAGE
+  # ============================================================
 
-        - name: Install test dependencies
-          run: pip install pytest
+  check_package:
+    runs-on: ${{ matrix.os }}
+    needs: build_package
 
-        - name: Run tests
-          run: pytest -vs ./tests/solvers/test_solvers.py ./tests/solvers/test_starter.py -m starter
-          working-directory: ./discopygal
+    strategy:
+      fail-fast: false
 
-        - name: Run GUI tests (Linux)
-          if: runner.os == 'Linux'
-          run: |
-                sudo apt-get install -y xvfb
-                export DISPLAY=:99
-                xvfb-run -a pytest -vs ./tests/solvers/test_solver_viewer.py -m starter
-          working-directory: ./discopygal
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-22.04
+          - windows-2025
+          - windows-2022
+          - macos-15
+          - macos-14
 
-        - name: Run GUI tests
-          if: runner.os != 'Linux'
-          run: pytest -vs ./tests/solvers/test_solver_viewer.py -m starter
-          working-directory: ./discopygal
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # ----------------------------------------------------------
+      # Windows
+      # ----------------------------------------------------------
+
+      - name: Install Qt6 on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          winget install --id TheQtCompany.Qt.6 -e --source winget
+
+          $qtRoots = @(
+            'C:\Qt',
+            'C:\Program Files\Qt'
+          )
+
+          $qtBin = Get-ChildItem `
+            -Path $qtRoots `
+            -Filter qmake.exe `
+            -Recurse `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+
+          if ($null -eq $qtBin) {
+            Write-Error "Qt6 qmake.exe was not found"
+            exit 1
+          }
+
+          Write-Host "Found Qt at $($qtBin.DirectoryName)"
+
+          Add-Content `
+            -Path $env:GITHUB_PATH `
+            -Value $qtBin.DirectoryName
+
+          qmake -v
+
+      # ----------------------------------------------------------
+      # Linux
+      # ----------------------------------------------------------
+
+      - name: Setup Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            gcc-${{ env.GCC_MAJOR_VERSION }} \
+            g++-${{ env.GCC_MAJOR_VERSION }} \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev
+
+          echo "CC=gcc-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+          echo "CXX=g++-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+
+      # ----------------------------------------------------------
+      # macOS
+      # ----------------------------------------------------------
+
+      - name: Setup macOS
+        if: runner.os == 'macOS'
+        run: |
+          pip install pyqt6
+
+      # ----------------------------------------------------------
+      # Download release ZIP
+      # ----------------------------------------------------------
+
+      - name: Download Discopygal release
+        uses: actions/download-artifact@v4
+        with:
+          name: discopygal-release
+          path: release
+
+      # ----------------------------------------------------------
+      # Extract release ZIP
+      # ----------------------------------------------------------
+
+      - name: Extract Discopygal release
+        shell: bash
+        run: |
+          mkdir -p release/extracted
+
+          unzip \
+            release/${{ needs.build_package.outputs.package_zip_file }} \
+            -d release/extracted
+
+          echo "Release contents:"
+          find release/extracted -maxdepth 2 -type f
+
+      # ----------------------------------------------------------
+      # Install package
+      # ----------------------------------------------------------
+
+      - name: Increase conan timeout
+        run: |
+          mkdir -p ~/.conan2
+          echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
+
+      - name: Install Discopygal
+        shell: bash
+        run: |
+          python -m pip install -v \
+            release/extracted/${{ needs.build_package.outputs.package_whl_file }}
+
+      # ----------------------------------------------------------
+      # Clone source for tests
+      # ----------------------------------------------------------
+
+      - name: Clone discopygal
+        run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+
+      # ----------------------------------------------------------
+      # Tests
+      # ----------------------------------------------------------
+
+      - name: Run tests
+        run: |
+          pytest -v ./tests -m sanity
+        working-directory: ./discopygal
+
+      - name: Run GUI tests (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y xvfb
+
+          export DISPLAY=:99
+
+          xvfb-run -a \
+            pytest -vs ./tests -m gui
+        working-directory: ./discopygal
+
+      - name: Run GUI tests
+        if: runner.os != 'Linux'
+        run: |
+          pytest -vs ./tests -m gui
+        working-directory: ./discopygal
+
+
+  # ============================================================
+  # CHECK STARTER PACKAGE
+  # ============================================================
+
+  check_starter_package:
+    runs-on: ${{ matrix.os }}
+    needs: build_package
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os:
+          - ubuntu-24.04
+          - ubuntu-22.04
+          - windows-2025
+          - windows-2022
+          - macos-15
+          - macos-14
+
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # ----------------------------------------------------------
+      # Windows
+      # ----------------------------------------------------------
+
+      - name: Install Qt6 on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          winget install --id TheQtCompany.Qt.6 -e --source winget
+
+          $qtRoots = @(
+            'C:\Qt',
+            'C:\Program Files\Qt'
+          )
+
+          $qtBin = Get-ChildItem `
+            -Path $qtRoots `
+            -Filter qmake.exe `
+            -Recurse `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+
+          if ($null -eq $qtBin) {
+            Write-Error "Qt6 qmake.exe was not found"
+            exit 1
+          }
+
+          Write-Host "Found Qt at $($qtBin.DirectoryName)"
+
+          Add-Content `
+            -Path $env:GITHUB_PATH `
+            -Value $qtBin.DirectoryName
+
+          qmake -v
+
+      # ----------------------------------------------------------
+      # Linux
+      # ----------------------------------------------------------
+
+      - name: Setup Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            gcc-${{ env.GCC_MAJOR_VERSION }} \
+            g++-${{ env.GCC_MAJOR_VERSION }} \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev
+
+          echo "CC=gcc-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+          echo "CXX=g++-${{ env.GCC_MAJOR_VERSION }}" >> $GITHUB_ENV
+
+      # ----------------------------------------------------------
+      # macOS
+      # ----------------------------------------------------------
+
+      - name: Setup macOS
+        if: runner.os == 'macOS'
+        run: |
+          pip install pyqt6
+
+      # ----------------------------------------------------------
+      # Download starter package
+      # ----------------------------------------------------------
+
+      - name: Download Discopygal starter package
+        uses: actions/download-artifact@v4
+        with:
+          name: starter_package
+          path: starter_package
+
+      # ----------------------------------------------------------
+      # Install starter package
+      # ----------------------------------------------------------
+
+      - name: Increase conan timeout
+        run: |
+          mkdir -p ~/.conan2
+          echo "core.net.http:timeout=600" >> ~/.conan2/global.conf
+
+      - name: Install Discopygal
+        shell: bash
+        run: |
+          python -m pip install -v \
+            starter_package/${{ needs.build_package.outputs.starter_package_whl_file }}
+
+      # ----------------------------------------------------------
+      # Clone source for tests
+      # ----------------------------------------------------------
+
+      - name: Clone discopygal
+        run: git clone https://${{ secrets.MY_GITHUB_PAT }}@github.com/TAU-CGL/discopygal.git
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+
+      # ----------------------------------------------------------
+      # Tests
+      # ----------------------------------------------------------
+
+      - name: Run tests
+        run: |
+          pytest -vs \
+            ./tests/solvers/test_solvers.py \
+            ./tests/solvers/test_starter.py \
+            -m starter
+        working-directory: ./discopygal
+
+      - name: Run GUI tests (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y xvfb
+
+          export DISPLAY=:99
+
+          xvfb-run -a \
+            pytest -vs \
+            ./tests/solvers/test_solver_viewer.py \
+            -m starter
+        working-directory: ./discopygal
+
+      - name: Run GUI tests
+        if: runner.os != 'Linux'
+        run: |
+          pytest -vs \
+            ./tests/solvers/test_solver_viewer.py \
+            -m starter
+        working-directory: ./discopygal
