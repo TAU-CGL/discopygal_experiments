@@ -472,6 +472,19 @@ jobs:
       # Same CGALPY-variant requirement as the main package: the starter
       # tests import discopygal.bindings, so run the shipped installer
       # rather than a plain pip install of the wheel.
+      - name: Patch CGAL variant build config key
+        shell: bash
+        working-directory: starter_package
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          script_path = Path("build_cgal_variants.py")
+          script = script_path.read_text(encoding="utf-8")
+          script = script.replace("cmake.verbose", "build.verbose")
+          script_path.write_text(script, encoding="utf-8")
+          PY
+
       - name: Install Discopygal
         shell: bash
         working-directory: starter_package
