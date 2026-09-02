@@ -67,7 +67,7 @@ jobs:
 
           cp "dist/$WHL" release/
           cp install.py release/
-          cp scripts/install_cgal.py release/
+          cp scripts/build_cgal_variants.py release/
 
           cd release
 
