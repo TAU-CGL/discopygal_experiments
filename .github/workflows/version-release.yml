@@ -315,6 +315,25 @@ jobs:
       # (e.g. CGALPY_kerEpecInt_..._aos2CsVeHeFePl_...), which a plain
       # "pip install <whl>" never produces. install.py ships in the release
       # ZIP precisely to build and install those CGAL variants.
+      - name: Patch installer for scikit-build-core >= 0.10
+        shell: bash
+        working-directory: release/extracted
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          for filename in ("install.py", "build_cgal_variants.py"):
+              path = Path(filename)
+              if not path.exists():
+                  continue
+
+              content = path.read_text(encoding="utf-8")
+              patched = content.replace("cmake.verbose", "build.verbose")
+
+              if patched != content:
+                  path.write_text(patched, encoding="utf-8")
+          PY
+
       - name: Install Discopygal
         shell: bash
         working-directory: release/extracted
@@ -472,6 +491,25 @@ jobs:
       # Same CGALPY-variant requirement as the main package: the starter
       # tests import discopygal.bindings, so run the shipped installer
       # rather than a plain pip install of the wheel.
+      - name: Patch installer for scikit-build-core >= 0.10
+        shell: bash
+        working-directory: starter_package
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          for filename in ("install.py", "build_cgal_variants.py"):
+              path = Path(filename)
+              if not path.exists():
+                  continue
+
+              content = path.read_text(encoding="utf-8")
+              patched = content.replace("cmake.verbose", "build.verbose")
+
+              if patched != content:
+                  path.write_text(patched, encoding="utf-8")
+          PY
+
       - name: Install Discopygal
         shell: bash
         working-directory: starter_package
