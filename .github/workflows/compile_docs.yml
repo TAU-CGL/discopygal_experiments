@@ -38,6 +38,7 @@ jobs:
                 pip install pipenv
                 sed -i '/pyqt5designer = "*"/d' Pipfile # Remove bad dependency for linux
                 CC=gcc-${{ env.GCC_MAJOR_VERSION }} CXX=g++-${{ env.GCC_MAJOR_VERSION }} pipenv install --python $(which python) --dev --verbose
+                pipenv run pip install sphinx-copybutton # Not in the Pipfile of older tags
                 sudo apt install texlive-latex-extra dvipng
           working-directory: ./discopygal
 
